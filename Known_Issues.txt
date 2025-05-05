@@ -1,1 +1,3 @@
 1) current_space function does not correctly count the number of squares because it relies on the legal move generator, which does not allow it to count squares that are occupied by your color.
+	- Fixed
+2) The pawn chain function is not correctly working with the dictionary to pull out the pawn squares.
