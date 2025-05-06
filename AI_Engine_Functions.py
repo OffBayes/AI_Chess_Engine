@@ -82,10 +82,13 @@ def current_pawnchain(board):
         C = 'p'
     
     # Numerical notation of pawn squares
-    pawn_squares_num = [square for square, piece in hyp_board.piece_map() if piece == chess.Piece.from_symbol(C)]
+    pawn_squares_num = [square for square, piece in hyp_board.piece_map().items() if piece == chess.Piece.from_symbol(C)]
     
     # String notation of pawn squares
     pawn_loc = ''.join([chess.square_name(i) for i in pawn_squares_num])
+    pawn_loc = re.sub(r'\d+', '', pawn_loc)  # Remove all digits from the string
+    pawn_loc = ''.join(sorted(pawn_loc))     # Sorts the columns alphabetically
+    
 
 def score_pos(board, depth, weights=[1,1,1]):
     """
