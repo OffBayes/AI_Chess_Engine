@@ -9,6 +9,7 @@ Purpose: Create a Chessbot
 # Imports
 import chess
 import re
+import numpy as np
 
 class ChessEngine:
     """
@@ -25,8 +26,9 @@ class ChessEngine:
         hyp_board = board.copy()
         legal_moves = [i.uci() for i in hyp_board.legal_moves]
         return legal_moves
+   
     
-    def find_move(board, eval_func, depth=4, deep_search='None'):
+    #def find_move(board, eval_func, depth=4, deep_search='None'):
         """
         This function calculates the best move based on the position evaluation
         function. Any position evaluation function can be passed to it. Find_move
@@ -39,11 +41,67 @@ class ChessEngine:
         deep_search: the function which selects which lines should go beyond the depth.
         
         It returns:
-        A dictionary of the top five move choices and their associated scores.
+        A list of tuples of the top five move choices and their associated scores.
         """        
+        """
         hyp_board = board.copy()
-        legal_moves= ChessEngine().legal_moves_list(hyp_board)    
         
+        # The moves to be considered
+        candidate_moves = ChessEngine().legal_moves_list(hyp_board)
+        # This is a list that records how many move turns deep each move is
+        move_depth = [0.5]*len(candidate_moves)
+        """
+        """ 
+        This function can analyze arbitrarily deep by using a move stack. With this
+        approach, we keep two lists: a list of moves to analyze and the current
+        analysis depth of each of the aforementioned moves. For each move in the
+        move list, 
+        """
+        
+        """
+        while candidate_moves:
+            if move_depth[-1] == depth:
+        """       
+    
+    def search(self, board, eval_func, depth=4):
+        """
+        This function evaluates the best score that can be achieved from the current
+        position using a recursive minimax search up to a given depth.
+
+        It takes three arguments:
+        board: the current board space.
+        eval_func: the function which scores a given position.
+        depth: how many ply deep the search goes.
+
+        It returns:
+        A numerical score for the current position.
+        """
+        hyp_board = board.copy()
+
+        if depth == 0 or hyp_board.is_game_over():
+            return eval_func(hyp_board)
+
+        legal_moves = ChessEngine().legal_moves_list(hyp_board)
+
+        if hyp_board.turn == ChessEngine.white:
+            best_value = -np.inf
+            for move in legal_moves:
+                hyp_board.push_uci(move)
+                value = ChessEngine().search(hyp_board, eval_func, depth - 1)
+                best_value = max(best_value, value)
+                hyp_board.pop()
+            return best_value
+        else:
+            best_value = np.inf
+            for move in legal_moves:
+                hyp_board.push_uci(move)
+                value = ChessEngine().search(hyp_board, eval_func, depth - 1)
+                best_value = min(best_value, value)
+                hyp_board.pop()
+            return best_value
+                
+        
+    
     def minimax(board_node, eval_func):
         """
         This function finds the maximum value move for one full turn cycle.
@@ -186,7 +244,7 @@ class ChessEngine:
         pawn_loc = ''.join(sorted(pawn_loc))     # Sorts the columns alphabetically
         
     
-    def score_pos(board, weights=[1, 0.5]):
+    def score_pos(self, board, weights=[1, 0.5]):
         """
         This function scores a position. It scores based on 4 categories — material,
         development, squares controlled, king safety, etc.
