@@ -1,3 +1,16 @@
+Major Issues:
+----------------------------------------------------------------------------------------------------------------------------------
+1) The search function is currently very slow. Even searching 4 moves deep (8 ply) takes prohibitively long. 
+	- This can potentially be fixed by pruning, rewriting the search function in C, and maybe making it able to be run on the GPU.
+
+
+Tweaks:
+----------------------------------------------------------------------------------------------------------------------------------
+
+
+
+Fixed Issues:
+----------------------------------------------------------------------------------------------------------------------------------
 1) current_space function does not correctly count the number of squares because it relies on the legal move generator, which does not allow it to count squares that are occupied by your color.
-	- Fixed
 2) The pawn chain function is not correctly working with the dictionary to pull out the pawn squares.
+3) I should probably make a function for legal_moves just because I reuse it so much
