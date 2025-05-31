@@ -258,5 +258,9 @@ class ChessEngine:
         means it favors black, and a positive means it favors white.
         """
         w,b = ChessEngine().current_material(board)
-        return weights[0]*(w-b)
+        if board.is_checkmate():
+            score = -np.inf if board.turn else np.inf
+        else:
+            score = weights[0] * (w - b)
+        return score
     
