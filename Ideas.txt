@@ -1,0 +1,9 @@
+1) I think the function which evaluates board state will be key to finding the best engine.
+2) I think having a good search algorithm will be really important. It is impossible to check all of the potential moves left.
+	- Maybe I can check all moves for something like the next 1-3, but I will need some algorithm after that to prune down trees.
+3) Maybe I can have the neural network compete against a base model until it starts winning. Then I could have a new one compete against the winner, so on and so forth
+4) will GANs be helpful?
+
+Search Function
+1) alpha beta pruning
+2) Maybe I can use a stack approach, where I first put all the first moves on the stack, and keep iterating through the list. I would need a logic to evaluate whether I should expand moves to a deeper level or whether they are fully expanded. Maybe I could have a separate side by side loop that gives the depth? So if I add new moves to evaluate, I also keep track of their depth. I could use 0.5 for when it is my opponent's move.
