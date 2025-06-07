@@ -18,6 +18,7 @@ end_game = chess.Board(fen='8/8/8/8/8/5k2/7P/7K w - - 0 1')
 castling = chess.Board(fen='4k2r/8/8/8/8/8/8/R3K2R w KQk - 0 1')
 forced = chess.Board(fen='rnb1kbnr/ppppp1pp/5p2/8/5P1q/2N5/PPPPP1PP/R1BQKBNR w')
 queens = chess.Board(fen='qqqqqqqq/rrrrrrrr/8/8/8/8/RRRRRRRR/QQQQQQQQ')
+italian = chess.Board(fen='r1bqkbnr/pppp1ppp/2n5/4p3/2B1P3/5N2/PPPP1PPP/RNBQK2R b')
 
 
 class TestLegalMovesList:
@@ -45,19 +46,49 @@ class TestLegalMovesList:
 
 
 class TestHeuristicEval:
+    def setup_method(self):
+        self.eval = AI.HeuristicEval()
+
     # Testing Current Material
     def test_current_material_empty(self):
-        assert AI.HeuristicEval.current_material(empty_board) == (0, 0)
+        assert self.eval.current_material(empty_board) == (0, 0)
 
     def test_current_material_end_game(self):
-        assert AI.HeuristicEval.current_material(end_game) == (1, 0)
+        assert self.eval.current_material(end_game) == (1, 0)
 
     def test_current_material_queens(self):
-        assert AI.HeuristicEval.current_material(queens) == (112, 112)
+        assert self.eval.current_material(queens) == (112, 112)
 
     def test_current_material_starting(self):
-        score = AI.HeuristicEval.current_material(starting_position)
+        score = self.eval.current_material(starting_position)
+        assert score == (39.4, 39.4)
+
+    def test_current_material_italian(self):
+        score = self.eval.current_material(italian)
         assert score == (39.4, 39.4)
 
     # Testing Current Space
+    def test_current_space_empty(self):
+        assert self.eval.current_space(empty_board) == (0, 0)
+
+    def test_current_space_starting(self):
+        assert self.eval.current_space(starting_position) == (0, 0)
+
+    def test_current_space_stalemate(self):
+        assert self.eval.current_space(stalemate) == (9, 0)
+
+    def test_current_space_checkmate(self):
+        assert self.eval.current_space(checkmate) == (4, 7)
+
+    def test_current_space_end_game(self):
+        assert self.eval.current_space(end_game) == (0, 8)
+
+    def test_current_space_queens(self):
+        assert self.eval.current_space(queens) == (24, 24)
+
+    def test_current_space_forced(self):
+        assert self.eval.current_space(forced) == (0, 7)
+
+    def test_current_space_italian(self):
+        assert self.eval.current_space(italian) == (9, 5)
     # def 1

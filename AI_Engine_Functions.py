@@ -13,8 +13,7 @@ import numpy as np
 
 # Functions
 def legal_moves_list(board):
-    hyp_board = board.copy()
-    legal_moves = [i.uci() for i in hyp_board.legal_moves]
+    legal_moves = [i.uci() for i in board.legal_moves]
     return legal_moves
 
 # Classes
@@ -173,7 +172,7 @@ class HeuristicEval(EvalEng):
         scoring values — pawn: 1, knight: 3, bishop: 3.2, rook: 5, queen: 9.
 
         It takes one argument:
-        board: the current board space.
+        board: the current board state.
 
         It returns:
         A tuple where the first position is the white material score and the
@@ -200,29 +199,32 @@ class HeuristicEval(EvalEng):
         on the number of opponent squares that can currently be moved to.
 
         It takes one argument:
-        board: the current board space.
+        board: the current board state.
 
         It returns:
-        An integer which indicates how much space the current player controls.
+        A tuple where the first position is the white space score and the
+        second is the black space score.
         """
         hyp_board = board.copy()
+        score = []
+        for color in ['white', 'black']:
+            if color == 'white':
+                hyp_board.turn = True
+                opponent_rows = ["5", "6", "7", "8"]
+            else:
+                hyp_board.turn = False
+                opponent_rows = ["1", "2", "3", "4"]
 
-        # Creates a list of strings containing all the current legal moves
-        legal_moves = ''.join([i.uci() for i in hyp_board.generate_legal_moves()])
-        result = ''
-        # Removes the starting squares so that only the end squares remain
-        for i in range(2, len(legal_moves), 4):
-            result += legal_moves[i:i+2]  # take 2 characters, skip 2
+            # Generate_legal_moves is required because we don't want validation
+            legal_moves = ''.join([i.uci() for i in hyp_board.generate_legal_moves()])
+            result = ''
 
-        """
-        Checks which color the current player is. This is necessary to know
-        what rows are owned by the oppononent.
-        """
-        if hyp_board.turn == ChessEngine().white:
-            opponent_rows = ["5", "6", "7", "8"]
-        else:
-            opponent_rows = ["1", "2", "3", "4"]
-        score = sum(result.count(moves) for moves in opponent_rows)
+            # Removes the starting squares so that only the end squares remain
+            for i in range(2, len(legal_moves), 4):
+                result += legal_moves[i:i+2]  # take 2 characters, skip 2
+
+            score.append(sum(result.count(moves) for moves in opponent_rows))
+        score = tuple(score)
         return score
 
     def current_development(self, board):
