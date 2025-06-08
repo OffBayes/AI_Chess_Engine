@@ -149,6 +149,33 @@ class EvalEng:
     def score_pos(self, board):
         raise NotImplementedError("Subclasses must implement score_pos")
 
+    def pawn_control_squares(self, board, color):
+        """
+        Returns a list of squares that are controlled by pawns of the given
+        color, even if there are no pieces to capture (i.e., includes diagonal
+        influence).
+
+        Arguments:
+        - board: a python-chess Board object.
+        - color: chess.WHITE or chess.BLACK
+
+        Returns:
+        - A list of controlled square names (e.g., ["e4", "f5", "e4"])
+        """
+        controlled = []
+        direction = 1 if color == chess.WHITE else -1
+
+        for square in board.pieces(chess.PAWN, color):
+            file = chess.square_file(square)
+            rank = chess.square_rank(square)
+
+            for df in [-1, 1]:
+                f = file + df
+                r = rank + direction
+                if 0 <= f <= 7 and 0 <= r <= 7:
+                    target_square = chess.square(f, r)
+                    controlled.append(chess.square_name(target_square))
+        return controlled
 
 class HeuristicEval(EvalEng):
     """
@@ -180,23 +207,24 @@ class HeuristicEval(EvalEng):
         """
         state = board.board_fen()
         white_score = (state.count('P')
-                      + 3*state.count('N')
-                      + 3.2*state.count('B')
-                      + 5*state.count('R')
-                      + 9*state.count('Q'))
+                       + 3*state.count('N')
+                       + 3.2*state.count('B')
+                       + 5*state.count('R')
+                       + 9*state.count('Q'))
 
         black_score = (state.count('p')
-                      + 3*state.count('n')
-                      + 3.2*state.count('b')
-                      + 5*state.count('r')
-                      + 9*state.count('q'))
+                       + 3*state.count('n')
+                       + 3.2*state.count('b')
+                       + 5*state.count('r')
+                       + 9*state.count('q'))
         scores = (white_score, black_score)
         return scores
 
     def current_space(self, board):
         """
-        This function calculates the current space control. It scores space based 
-        on the number of opponent squares that can currently be moved to.
+        This function calculates the current space control. It scores space
+        based on the number of opponent squares that can currently be moved to
+        or a pawn could move to if a piece was there.
 
         It takes one argument:
         board: the current board state.
@@ -215,13 +243,23 @@ class HeuristicEval(EvalEng):
                 hyp_board.turn = False
                 opponent_rows = ["1", "2", "3", "4"]
 
-            # Generate_legal_moves is required because we don't want validation
-            legal_moves = ''.join([i.uci() for i in hyp_board.generate_legal_moves()])
+            # Generate pseudo-legal moves, excluding all pawn moves
+            legal_moves = ''.join([
+                move.uci()
+                for move in hyp_board.generate_pseudo_legal_moves()
+                if hyp_board.piece_type_at(move.from_square) != chess.PAWN
+            ])
+
             result = ''
 
             # Removes the starting squares so that only the end squares remain
             for i in range(2, len(legal_moves), 4):
                 result += legal_moves[i:i+2]  # take 2 characters, skip 2
+
+            # Adds the squares pawns can control
+            pawn_controls = self.pawn_control_squares(
+                hyp_board, hyp_board.turn)
+            result += ''.join(pawn_controls)
 
             score.append(sum(result.count(moves) for moves in opponent_rows))
         score = tuple(score)
