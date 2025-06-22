@@ -8,6 +8,7 @@ Purpose: Create a Chessbot
 """
 # Imports
 import chess
+import chess.polyglot
 import re
 import numpy as np
 
@@ -19,22 +20,23 @@ def legal_moves_list(board):
 # Classes
 class ChessEngine:
     """
-    A customizable chess engine composed of an evaluation engine, search engine,
-    and general evaluation functions.
+    A customizable chess engine.
 
-    This class allows users to configure the engine's behavior by supplying
-    different components at initialization time.
+    ChessEngine allows users to configure the engine's behavior by supplying
+    different components at initialization time. ChessEngine requires a search
+    engine and evaluation engine to create an object. These engines determine
+    the logic used to determine what move to make.
     """
 
     def __init__(self, search, evaluation):
         """
         Initialize the engine with specific components.
 
-        Args:
+        Arguments
+        ---------
             search: The engine's search component.
             evaluation: The engine's board evaluation component.
         """
-
         self.searchEng = search
         self.evalEng = evaluation
         self.white = True
@@ -44,14 +46,14 @@ class ChessEngine:
         """Return the evaluation score of the given board."""
         return self.evalEng.score_pos(board)
 
-    def find_best_move(self, board, depth=4):
+    def find_best_move(self, board, depth=2):
         """Use the composed search engine to find the best move."""
         return self.searchEng.search(board, self.evaluate, depth)
 
 
 class SearchEng:
     """
-    A customizable search engine that allows different.
+    A customizable search engine that allows different search approaches.
 
     This class allows users to configure the engine's behavior by supplying
     different components at initialization time.
@@ -59,13 +61,14 @@ class SearchEng:
 
     def minimax(self, board_node, eval_func):
         """
-        This function finds the maximum value move for one full turn cycle.
+        Minimax finds the maximum value move for one full turn cycle (two ply).
         It assumes the opponent plays optimally (according to the evaluation
         function. It returns the maximum value move and the value for the
         current player.
 
-        It takes four arguments:
-        board_node: a hypothetical board state that could be reached..
+        Arguments
+        ---------
+        board_node: a hypothetical board state that could be reached.
 
         It returns:
         A tuple where the best move is first and the score is second.
@@ -97,7 +100,7 @@ class SearchEng:
 
         return best_move
 
-    def search(self, board, eval_func, depth=4):
+    def search(self, board, eval_func, depth=2):
         """
         This function evaluates the best score that can be achieved from the
         current position using a recursive minimax search up to a given depth.
@@ -108,45 +111,114 @@ class SearchEng:
         depth: how many ply deep the search goes.
 
         It returns:
-        A numerical score for the current position.
+        A tuple where the first element is the best move in UCI format, and the
+        second element is the corresponding score.
         """
         hyp_board = board.copy()
 
         if depth == 0 or hyp_board.is_game_over():
-            return eval_func(hyp_board)
+            return (None, eval_func(hyp_board))
 
-        legal_moves = ChessEngine().legal_moves_list(hyp_board)
+        legal_moves = legal_moves_list(hyp_board)
 
-        if hyp_board.turn == ChessEngine.white:
+        if hyp_board.turn is True:
             best_value = -np.inf
             for move in legal_moves:
                 hyp_board.push_uci(move)
-                value = ChessEngine().search(hyp_board, eval_func, depth - 1)
-                best_value = max(best_value, value)
+                _, value = self.search(hyp_board, eval_func, depth - 1)
                 hyp_board.pop()
-            return best_value
+                if value > best_value:
+                    best_value = value
+                    best_move = move
+
+            return (best_move, best_value)
+
         else:
             best_value = np.inf
             for move in legal_moves:
                 hyp_board.push_uci(move)
-                value = ChessEngine().search(hyp_board, eval_func, depth - 1)
-                best_value = min(best_value, value)
+                _, value = self.search(hyp_board, eval_func, depth - 1)
                 hyp_board.pop()
-            return best_value
+                if value < best_value:
+                    best_value = value
+                    best_move = move
+
+            return (best_move, best_value)
+
+class AlphaBetaSearch(SearchEng):
+    """
+    A search engine with alpha beta pruning.
+    """
+
+    def search(self, board, eval_func, depth=4, alpha=-np.inf, beta=np.inf):
+        """
+        This function evaluates the best score that can be achieved from the
+        current position using a recursive minimax search up to a given depth.
+
+        It takes three arguments:
+        board: the current board space.
+        eval_func: the function which scores a given position.
+        depth: how many ply deep the search goes.
+
+        It returns:
+        A tuple where the first element is the best move in UCI format, and the
+        second element is the corresponding score.
+        """
+        hyp_board = board.copy()
+
+        if depth == 0 or hyp_board.is_game_over():
+            return (None, eval_func(hyp_board))
+
+        legal_moves = legal_moves_list(hyp_board)
+
+        if hyp_board.turn is True:
+            best_value = -np.inf
+            for move in legal_moves:
+                hyp_board.push_uci(move)
+                _, value = self.search(hyp_board, eval_func, depth - 1)
+                hyp_board.pop()
+                if value > best_value:
+                    best_value = value
+                    best_move = move
+                alpha = max(alpha, best_value)
+                if beta <= alpha:
+                    break
+            return (best_move, best_value)
+
+        else:
+            best_value = np.inf
+            for move in legal_moves:
+                hyp_board.push_uci(move)
+                _, value = self.search(hyp_board, eval_func, depth - 1)
+                hyp_board.pop()
+                if value < best_value:
+                    best_value = value
+                    best_move = move
+                beta = min(beta, best_value)
+                if beta <= alpha:
+                    break
+            return (best_move, best_value)
 
 
 class EvalEng:
     """
-    This class is an abstraction of various specific evaluation functions.
+    EvalEng represents the chess engine evaluation capability.
 
     This class allows users to configure the engine's behavior by supplying
     different components at initialization time.
 
-    Attributes:
-
+    Methods
+    -------
+        score_pos: Checks whether subclass has implemented scoring function.
     """
 
     def score_pos(self, board):
+        """
+        score_pos scores a position to see which player has the advantage.
+        
+        It 
+        
+        """
         raise NotImplementedError("Subclasses must implement score_pos")
 
     def pawn_control_squares(self, board, color):
@@ -177,15 +249,16 @@ class EvalEng:
                     controlled.append(chess.square_name(target_square))
         return controlled
 
+
 class HeuristicEval(EvalEng):
     """
-    This class attempts to evaluate the position using traditional chess
-    heuristics.
+    HeuristicEval attempts to evaluate the position using chess heuristics.
 
-    Traditional heuristics include counting the material, number of squares
-    controlled, number of pieces developed, pawn structure, king safety, etc.
+    Traditional heuristics include material count, squares controlled, piece
+    development, pawn structure, king safety, etc.
 
-    Methods:
+    Methods
+    -------
         current_material: calculatest the material score of the position.
         current_space: calculates the number of opponent's squares controlled.
         current_development: counts the number of pieces developed.
@@ -271,7 +344,8 @@ class HeuristicEval(EvalEng):
         development based on whether the current square is the same as the
         starting square.
 
-        It takes one argument:
+        Arguments
+        ---------
         board: the current board space.
 
         It returns:
@@ -284,10 +358,12 @@ class HeuristicEval(EvalEng):
         """
         This function calculates the current number of pawn chains. 
 
-        It takes one argument:
+        Arguments
+        ---------
         board: the current board space.
 
-        It returns:
+        Returns
+        -------
         An integer which indicates how many pawn chains the current player has.
         """
         hyp_board = board.copy()
@@ -306,7 +382,7 @@ class HeuristicEval(EvalEng):
         pawn_loc = re.sub(r'\d+', '', pawn_loc)  # Remove all digits from the string
         pawn_loc = ''.join(sorted(pawn_loc))     # Sorts the columns alphabetically 
 
-    def score_pos(self, board, weights=[1, 0.5]):
+    def score_pos(self, board, weights=[1, 0.2]):
         """
         This function scores a position. It scores based on 4 categories:
         material, development, squares controlled, king safety, etc.
@@ -320,9 +396,14 @@ class HeuristicEval(EvalEng):
         negative means it favors black, and a positive means it favors
         white.
         """
-        w, b = ChessEngine().current_material(board)
+        mat = self.current_material(board)
+        spac = self.current_space(board)
         if board.is_checkmate():
             score = -np.inf if board.turn else np.inf
         else:
-            score = weights[0] * (w - b)
+            score = (weights[0] * (mat[0]-mat[1])
+                     + weights[1] * (spac[0]-spac[1]))
         return score
+
+
+# board.push_san(eng.find_best_move(board, depth=2)[0])
