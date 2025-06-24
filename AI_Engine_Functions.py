@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Mon Apr 28 20:19:46 2025
+Created on Mon Apr 28 20:19:46 2025.
 
 @author: Prior_Bayes
 
@@ -12,10 +12,23 @@ import chess.polyglot
 import re
 import numpy as np
 
+
 # Functions
 def legal_moves_list(board):
+    """
+    Legal_moves_list takes the moves generator and returns a list of moves.
+
+    Arguments
+    ---------
+    board : the current board position.
+
+    Returns
+    -------
+    legal_moves : A list of legal moves.
+    """
     legal_moves = [i.uci() for i in board.legal_moves]
     return legal_moves
+
 
 # Classes
 class ChessEngine:
@@ -62,16 +75,17 @@ class SearchEng:
     def minimax(self, board_node, eval_func):
         """
         Minimax finds the maximum value move for one full turn cycle (two ply).
+
         It assumes the opponent plays optimally (according to the evaluation
-        function. It returns the maximum value move and the value for the
-        current player.
+        function. This function minimizes the score for black and maximizes it
+        for white.
 
         Arguments
         ---------
         board_node: a hypothetical board state that could be reached.
 
         It returns:
-        A tuple where the best move is first and the score is second.
+        best_move: A tuple with the best move and associated score.
         """
         hyp_board = board_node.copy()
         legal_moves = legal_moves_list(board_node)
@@ -102,17 +116,26 @@ class SearchEng:
 
     def search(self, board, eval_func, depth=2):
         """
-        This function evaluates the best score that can be achieved from the
-        current position using a recursive minimax search up to a given depth.
+        Search finds the best guaranteed board within a certain depth.
 
-        It takes three arguments:
+        It looks a certain ply deep and evaluates the score at that position.
+        Using minimax, black tries to minimize and white maximize. The function
+        searches recursively and searches depth first. This implementation of
+        search can be extremely slow because the number of boards to be
+        evaluated roughly grows approximately by 30^N, where N is the number of
+        ply deep being searched. Since 2-ply is required even to look one move
+        into the future, this grows extremely quickly, even looking 1 move deep
+        requires evaluating 900 positions.
+
+        Arguments
+        ---------
         board: the current board space.
         eval_func: the function which scores a given position.
         depth: how many ply deep the search goes.
 
-        It returns:
-        A tuple where the first element is the best move in UCI format, and the
-        second element is the corresponding score.
+        Returns
+        -------
+        best_move: A tuple with the best move and associated score.
         """
         hyp_board = board.copy()
 
@@ -145,24 +168,29 @@ class SearchEng:
 
             return (best_move, best_value)
 
+
 class AlphaBetaSearch(SearchEng):
     """
-    A search engine with alpha beta pruning.
+    AlphaBetaSearch seeks to improve the search efficiency by pruning.
+
+    It specifically uses alpha-beta pruning to reduce the number of moves to be
+    considered. Alpha-beta pruning allows you to skip analyzing certain move
+    trees if you already know the opponent can force a worse position than
+    another move.
     """
 
     def search(self, board, eval_func, depth=4, alpha=-np.inf, beta=np.inf):
         """
-        This function evaluates the best score that can be achieved from the
-        current position using a recursive minimax search up to a given depth.
+        Search finds the best guaranteed board within a certain depth.
 
         It takes three arguments:
         board: the current board space.
         eval_func: the function which scores a given position.
         depth: how many ply deep the search goes.
 
-        It returns:
-        A tuple where the first element is the best move in UCI format, and the
-        second element is the corresponding score.
+        Returns
+        -------
+        best_move: A tuple with the best move and associated score.
         """
         hyp_board = board.copy()
 
@@ -178,6 +206,7 @@ class AlphaBetaSearch(SearchEng):
                 _, value = self.search(hyp_board, eval_func, depth - 1)
                 hyp_board.pop()
                 if value > best_value:
+                    print("White", value, best_value)
                     best_value = value
                     best_move = move
                 alpha = max(alpha, best_value)
@@ -192,6 +221,7 @@ class AlphaBetaSearch(SearchEng):
                 _, value = self.search(hyp_board, eval_func, depth - 1)
                 hyp_board.pop()
                 if value < best_value:
+                    print("Black", value, best_value)
                     best_value = value
                     best_move = move
                 beta = min(beta, best_value)
@@ -215,9 +245,9 @@ class EvalEng:
     def score_pos(self, board):
         """
         score_pos scores a position to see which player has the advantage.
-        
+
         It 
-        
+
         """
         raise NotImplementedError("Subclasses must implement score_pos")
 
@@ -227,9 +257,10 @@ class EvalEng:
         color, even if there are no pieces to capture (i.e., includes diagonal
         influence).
 
-        Arguments:
-        - board: a python-chess Board object.
-        - color: chess.WHITE or chess.BLACK
+        Arguments
+        ---------
+            board: a python-chess Board object.
+            color: chess.WHITE or chess.BLACK
 
         Returns:
         - A list of controlled square names (e.g., ["e4", "f5", "e4"])
@@ -356,7 +387,7 @@ class HeuristicEval(EvalEng):
 
     def current_pawnchain(self, board):
         """
-        This function calculates the current number of pawn chains. 
+        Current_pawnchain calculates the current number of pawn chains.
 
         Arguments
         ---------
@@ -364,7 +395,7 @@ class HeuristicEval(EvalEng):
 
         Returns
         -------
-        An integer which indicates how many pawn chains the current player has.
+        chain_num: An integer representing the pawn chain number.
         """
         hyp_board = board.copy()
 
@@ -375,12 +406,16 @@ class HeuristicEval(EvalEng):
             C = 'p'
 
         # Numerical notation of pawn squares
-        pawn_squares_num = [square for square, piece in hyp_board.piece_map().items() if piece == chess.Piece.from_symbol(C)]
+        pawn_squares_num = ([square for square, piece
+                             in hyp_board.piece_map().items()
+                             if piece == chess.Piece.from_symbol(C)])
 
         # String notation of pawn squares
         pawn_loc = ''.join([chess.square_name(i) for i in pawn_squares_num])
-        pawn_loc = re.sub(r'\d+', '', pawn_loc)  # Remove all digits from the string
-        pawn_loc = ''.join(sorted(pawn_loc))     # Sorts the columns alphabetically 
+        # Remove all digits from string
+        pawn_loc = re.sub(r'\d+', '', pawn_loc)
+        # Sorts the columns alphabetically 
+        pawn_loc = ''.join(sorted(pawn_loc))
 
     def score_pos(self, board, weights=[1, 0.2]):
         """
