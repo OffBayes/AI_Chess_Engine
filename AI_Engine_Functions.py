@@ -114,7 +114,22 @@ class SearchEng:
 
         return best_move
 
-    def search(self, board, eval_func, depth=2):
+    def should_prune(self, alpha, beta):
+        """
+        Determine if pruning should occur. Base implementation never prunes.
+
+        Arguments
+        ---------
+        alpha: Current alpha value
+        beta: Current beta value
+
+        Returns
+        -------
+        bool: True if pruning should occur, False otherwise
+        """
+        return False
+
+    def search(self, board, eval_func, depth=2, alpha=-np.inf, beta=np.inf):
         """
         Search finds the best guaranteed board within a certain depth.
 
@@ -146,28 +161,29 @@ class SearchEng:
         legal_moves = legal_moves_list(hyp_board)
 
         if hyp_board.turn is white:
-            best_value = -np.inf
             for move in legal_moves:
                 hyp_board.push_uci(move)
                 _, value = self.search(hyp_board, eval_func, depth - 1)
                 hyp_board.pop()
-                if value > best_value:
-                    best_value = value
+                if value > alpha:
+                    alpha = value
                     best_move = move
 
-            return (best_move, best_value)
+                if self.should_prune(alpha, beta):
+                    break
+
+            return (best_move, alpha)
 
         else:
-            best_value = np.inf
             for move in legal_moves:
                 hyp_board.push_uci(move)
                 _, value = self.search(hyp_board, eval_func, depth - 1)
                 hyp_board.pop()
-                if value < best_value:
-                    best_value = value
+                if value < beta:
+                    beta = value
                     best_move = move
 
-            return (best_move, best_value)
+            return (best_move, beta)
 
 
 class AlphaBetaSearch(SearchEng):
@@ -180,63 +196,31 @@ class AlphaBetaSearch(SearchEng):
     another move.
     """
 
-    def prune(self, score, alpha, beta):
+    def should_prune(self, alpha, beta):
         """
-        Prune decides whether a branch needs to be evaluated.
+        Determine if pruning should occur.
 
-        It decides which branches to evaluate using alpha-beta pruning, a
-        method which skips a branch if a move is found which can force a worse
-        outcome.
-
-        """
-
-    def search(self, board, eval_func, depth=4, alpha=-np.inf, beta=np.inf):
-        """
-        Search finds the best guaranteed board within a certain depth.
+        Alpha beta pruning occurs if alpha >= beta
 
         Arguments
         ---------
-        board: the current board space.
-        eval_func: the function which scores a given position.
-        depth: how many ply deep the search goes.
+        alpha: Current alpha value
+        beta: Current beta value
 
         Returns
         -------
-        best_move: A tuple with the best move and associated score.
+        bool: True if pruning should occur, False otherwise
         """
-        white = True
-        hyp_board = board.copy()
-        best_move = None
-        if depth == 0 or hyp_board.is_game_over():
-            return (None, eval_func(hyp_board))
+        to_prune = False
+        if alpha >= beta:
+            to_prune = True
+        return to_prune
 
-        legal_moves = legal_moves_list(hyp_board)
 
-        if hyp_board.turn is white:
-            for move in legal_moves:
-                hyp_board.push_uci(move)
-                _, value = self.search(hyp_board, eval_func, depth - 1)
-                hyp_board.pop()
-                if value > alpha:
-                    alpha = value
-                    best_move = move
-
-                if beta <= alpha:
-                    break
-            return (best_move, alpha)
-
-        else:
-            for move in legal_moves:
-                hyp_board.push_uci(move)
-                _, value = self.search(hyp_board, eval_func, depth - 1)
-                hyp_board.pop()
-                if value < beta:
-                    beta = value
-                    best_move = move
-
-                if beta <= alpha:
-                    break
-            return (best_move, beta)
+class GreedySearch(SearchEng):
+    """
+    A search engine which traverses the tree by looking at best options first.
+    """
 
 
 class EvalEng:
@@ -423,12 +407,14 @@ class HeuristicEval(EvalEng):
         pawn_loc = ''.join([chess.square_name(i) for i in pawn_squares_num])
         # Remove all digits from string
         pawn_loc = re.sub(r'\d+', '', pawn_loc)
-        # Sorts the columns alphabetically 
+        # Sorts the columns alphabetically
         pawn_loc = ''.join(sorted(pawn_loc))
 
     def score_pos(self, board, weights=[1, 0.2]):
         """
-        This function scores a position. It scores based on 4 categories:
+        Scores a position.
+
+        It scores based on multiple categories:
         material, development, squares controlled, king safety, etc.
 
         It takes two arguments:
@@ -440,13 +426,13 @@ class HeuristicEval(EvalEng):
         negative means it favors black, and a positive means it favors
         white.
         """
-        mat = self.current_material(board)
-        spac = self.current_space(board)
+        white_mat, black_mat = self.current_material(board)
+        white_spac, black_spac = self.current_space(board)
         if board.is_checkmate():
             score = -np.inf if board.turn else np.inf
         else:
-            score = (weights[0] * (mat[0]-mat[1])
-                     + weights[1] * (spac[0]-spac[1]))
+            score = (weights[0] * (white_mat - black_mat)
+                     + weights[1] * (white_spac - black_spac))
         return score
 
 
