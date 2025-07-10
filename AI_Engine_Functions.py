@@ -138,13 +138,14 @@ class SearchEng:
         best_move: A tuple with the best move and associated score.
         """
         hyp_board = board.copy()
-
+        white = True
+        best_move = None
         if depth == 0 or hyp_board.is_game_over():
             return (None, eval_func(hyp_board))
 
         legal_moves = legal_moves_list(hyp_board)
 
-        if hyp_board.turn is True:
+        if hyp_board.turn is white:
             best_value = -np.inf
             for move in legal_moves:
                 hyp_board.push_uci(move)
@@ -179,11 +180,22 @@ class AlphaBetaSearch(SearchEng):
     another move.
     """
 
+    def prune(self, score, alpha, beta):
+        """
+        Prune decides whether a branch needs to be evaluated.
+
+        It decides which branches to evaluate using alpha-beta pruning, a
+        method which skips a branch if a move is found which can force a worse
+        outcome.
+
+        """
+
     def search(self, board, eval_func, depth=4, alpha=-np.inf, beta=np.inf):
         """
         Search finds the best guaranteed board within a certain depth.
 
-        It takes three arguments:
+        Arguments
+        ---------
         board: the current board space.
         eval_func: the function which scores a given position.
         depth: how many ply deep the search goes.
@@ -192,42 +204,39 @@ class AlphaBetaSearch(SearchEng):
         -------
         best_move: A tuple with the best move and associated score.
         """
+        white = True
         hyp_board = board.copy()
-
+        best_move = None
         if depth == 0 or hyp_board.is_game_over():
             return (None, eval_func(hyp_board))
 
         legal_moves = legal_moves_list(hyp_board)
 
-        if hyp_board.turn is True:
-            best_value = -np.inf
+        if hyp_board.turn is white:
             for move in legal_moves:
                 hyp_board.push_uci(move)
                 _, value = self.search(hyp_board, eval_func, depth - 1)
                 hyp_board.pop()
-                if value > best_value:
-                    print("White", value, best_value)
-                    best_value = value
+                if value > alpha:
+                    alpha = value
                     best_move = move
-                alpha = max(alpha, best_value)
+
                 if beta <= alpha:
                     break
-            return (best_move, best_value)
+            return (best_move, alpha)
 
         else:
-            best_value = np.inf
             for move in legal_moves:
                 hyp_board.push_uci(move)
                 _, value = self.search(hyp_board, eval_func, depth - 1)
                 hyp_board.pop()
-                if value < best_value:
-                    print("Black", value, best_value)
-                    best_value = value
+                if value < beta:
+                    beta = value
                     best_move = move
-                beta = min(beta, best_value)
+
                 if beta <= alpha:
                     break
-            return (best_move, best_value)
+            return (best_move, beta)
 
 
 class EvalEng:
