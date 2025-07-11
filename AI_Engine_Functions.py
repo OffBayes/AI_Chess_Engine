@@ -54,12 +54,13 @@ class ChessEngine:
         self.evalEng = evaluation
         self.white = True
         self.black = False
+        self.depth = 4
 
     def evaluate(self, board):
         """Return the evaluation score of the given board."""
         return self.evalEng.score_pos(board)
 
-    def find_best_move(self, board, depth=2):
+    def find_best_move(self, board, depth=self.depth):
         """Use the composed search engine to find the best move."""
         return self.searchEng.search(board, self.evaluate, depth)
 
@@ -129,6 +130,21 @@ class SearchEng:
         """
         return False
 
+    def order_search(self, board, eval_func):
+        """
+        Determine the order of moves to be searched.
+
+        Arguments
+        ---------
+        board: the current board state.
+        eval_func: the function which scores a given position.
+
+        Returns
+        -------
+        search_order: a list ordered by the search order.
+        """
+        return legal_moves_list(board)
+
     def search(self, board, eval_func, depth=2, alpha=-np.inf, beta=np.inf):
         """
         Search finds the best guaranteed board within a certain depth.
@@ -158,7 +174,7 @@ class SearchEng:
         if depth == 0 or hyp_board.is_game_over():
             return (None, eval_func(hyp_board))
 
-        legal_moves = legal_moves_list(hyp_board)
+        legal_moves = self.order_search(hyp_board)
 
         if hyp_board.turn is white:
             for move in legal_moves:
@@ -217,11 +233,35 @@ class AlphaBetaSearch(SearchEng):
         return to_prune
 
 
-class GreedySearch(SearchEng):
+class GreedySearch(AlphaBetaSearch):
     """
     A search engine which traverses the tree by looking at best options first.
+
+    It inherits from alpha-beta search. This may end up being slower than alpha
+    beta because it has to do more board evaluations, but it may be faster
+    because it may be able to prune more often
     """
 
+    def order_search(self, board, eval_func):
+        """
+        Determine the order of moves to be searched.
+
+        This function determines the search order by evaluating the current
+        score of each position. The move it checks first at each tree is the
+        move which provides the best immediate value.
+
+        Arguments
+        ---------
+        board: the current board state.
+        eval_func: the function which scores a given position.
+
+        Returns
+        -------
+        search_order: a list ordered by the search order.
+        """
+        unsorted_legal_moves = legal_moves_list(board)
+        legal_move_scores = [eval_func(move) for move ]
+        return legal_moves_list(board)
 
 class EvalEng:
     """
