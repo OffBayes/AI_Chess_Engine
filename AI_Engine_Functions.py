@@ -13,24 +13,28 @@ import re
 import numpy as np
 
 
-# Functions
-def legal_moves_list(board):
-    """
-    Legal_moves_list takes the moves generator and returns a list of moves.
-
-    Arguments
-    ---------
-    board : the current board position.
-
-    Returns
-    -------
-    legal_moves : A list of legal moves.
-    """
-    legal_moves = [i.uci() for i in board.legal_moves]
-    return legal_moves
-
-
 # Classes
+class Orderer:
+    def legal_moves_list(board):
+        """
+        Legal_moves_list takes the moves generator and returns a list of moves.
+
+        Arguments
+        ---------
+        board : the current board position.
+
+        Returns
+        -------
+        legal_moves : A list of legal moves.
+        """
+        legal_moves = [i.uci() for i in board.legal_moves]
+        return legal_moves
+
+
+class Pruner:
+    def 
+
+
 class ChessEngine:
     """
     A customizable chess engine.
@@ -72,6 +76,18 @@ class SearchEng:
     This class allows users to configure the engine's behavior by supplying
     different components at initialization time.
     """
+
+    def __init__(self, pruner, orderer):
+        """
+        Initialize the search engine with a pruner and orderer.
+
+        Arguments
+        ---------
+        pruner : The search engine's pruning component.
+        orderer : The search engine's move ordering component.'
+        """
+        self.pruner = pruner
+        self.orderer = orderer
 
     def minimax(self, board_node, eval_func):
         """
@@ -174,7 +190,7 @@ class SearchEng:
         if depth == 0 or hyp_board.is_game_over():
             return (None, eval_func(hyp_board))
 
-        legal_moves = self.order_search(hyp_board)
+        legal_moves = self.orderer.order_search(hyp_board)
 
         if hyp_board.turn is white:
             for move in legal_moves:
@@ -202,7 +218,7 @@ class SearchEng:
             return (best_move, beta)
 
 
-class AlphaBetaSearch(SearchEng):
+class AlphaBetaSearch():
     """
     AlphaBetaSearch seeks to improve the search efficiency by pruning.
 
