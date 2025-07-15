@@ -12,7 +12,7 @@ import chess.polyglot
 import re
 import numpy as np
 
-
+white = True
 # Classes
 class Orderer:
     def legal_moves_list(board):
@@ -30,9 +30,68 @@ class Orderer:
         legal_moves = [i.uci() for i in board.legal_moves]
         return legal_moves
 
+    def order_search(self, board):
+        """
+        Determine the order of moves to be searched.
+
+        Arguments
+        ---------
+        board: the current board state.
+
+        Returns
+        -------
+        search_order: a list ordered by the search order.
+        """
+        return self.legal_moves_list(board)
+
+
+class GreedyOrder(Orderer):
+    """
+    An orderer which traverses the tree by looking at best options first.
+
+    It inherits from Orderer.
+    """
+
+    def order_search(self, board, eval_func):
+        """
+        Determine the order of moves to be searched.
+
+        This function determines the search order by evaluating the current
+        score of each position. The move it checks first at each tree is the
+        move which provides the best immediate value.
+
+        Arguments
+        ---------
+        board: the current board state.
+        eval_func: the function which scores a given position.
+
+        Returns
+        -------
+        search_order: a list ordered by the search order.
+        """
+        unsorted_legal_moves = self.legal_moves_list(board)
+        legal_move_scores = [(eval_func(move), move)
+                             for move in unsorted_legal_moves]
+        return sorted(legal_move_scores, reverse=board.Turn)
+
 
 class Pruner:
-    def 
+    """
+    Prunes leaves on the search tree.
+
+    Methods
+    -------
+    should_prune: Determine whether a tree should be pruned.
+    """
+
+    def should_prune(self, alpha, beta):
+        """
+        Determine whether a tree should be pruned.
+
+        By default, it is set to False. Other implementations use some logic to
+        determine pruning logic.
+        """
+        return False
 
 
 class ChessEngine:
@@ -45,7 +104,7 @@ class ChessEngine:
     the logic used to determine what move to make.
     """
 
-    def __init__(self, search, evaluation):
+    def __init__(self, search, evaluation, pruner=Pruner):
         """
         Initialize the engine with specific components.
 
@@ -64,7 +123,7 @@ class ChessEngine:
         """Return the evaluation score of the given board."""
         return self.evalEng.score_pos(board)
 
-    def find_best_move(self, board, depth=self.depth):
+    def find_best_move(self, board, depth):
         """Use the composed search engine to find the best move."""
         return self.searchEng.search(board, self.evaluate, depth)
 
@@ -105,14 +164,14 @@ class SearchEng:
         best_move: A tuple with the best move and associated score.
         """
         hyp_board = board_node.copy()
-        legal_moves = legal_moves_list(board_node)
+        legal_moves = Orderer.legal_moves_list(board_node)
 
         scores = []
 
         # This layer of for loop scores all of the current player's moves - MAX
         for move in legal_moves:
             hyp_board.push_san(move)
-            opp_legal_moves = legal_moves_list(hyp_board)
+            opp_legal_moves = Orderer.legal_moves_list(hyp_board)
 
             # This is a list of the scores after the opponent makes each move
             response_scores = []
@@ -130,36 +189,6 @@ class SearchEng:
         best_move = (legal_moves[scores.index(max(scores))], max(scores))
 
         return best_move
-
-    def should_prune(self, alpha, beta):
-        """
-        Determine if pruning should occur. Base implementation never prunes.
-
-        Arguments
-        ---------
-        alpha: Current alpha value
-        beta: Current beta value
-
-        Returns
-        -------
-        bool: True if pruning should occur, False otherwise
-        """
-        return False
-
-    def order_search(self, board, eval_func):
-        """
-        Determine the order of moves to be searched.
-
-        Arguments
-        ---------
-        board: the current board state.
-        eval_func: the function which scores a given position.
-
-        Returns
-        -------
-        search_order: a list ordered by the search order.
-        """
-        return legal_moves_list(board)
 
     def search(self, board, eval_func, depth=2, alpha=-np.inf, beta=np.inf):
         """
@@ -201,7 +230,7 @@ class SearchEng:
                     alpha = value
                     best_move = move
 
-                if self.should_prune(alpha, beta):
+                if self.pruner.should_prune(alpha, beta):
                     break
 
             return (best_move, alpha)
@@ -215,10 +244,13 @@ class SearchEng:
                     beta = value
                     best_move = move
 
+                if self.pruner.should_prune(alpha, beta):
+                    break
+
             return (best_move, beta)
 
 
-class AlphaBetaSearch():
+class AlphaBetaSearch(Pruner):
     """
     AlphaBetaSearch seeks to improve the search efficiency by pruning.
 
@@ -241,43 +273,13 @@ class AlphaBetaSearch():
 
         Returns
         -------
-        bool: True if pruning should occur, False otherwise
+        to_prune: True if pruning should occur, False otherwise
         """
         to_prune = False
         if alpha >= beta:
             to_prune = True
         return to_prune
 
-
-class GreedySearch(AlphaBetaSearch):
-    """
-    A search engine which traverses the tree by looking at best options first.
-
-    It inherits from alpha-beta search. This may end up being slower than alpha
-    beta because it has to do more board evaluations, but it may be faster
-    because it may be able to prune more often
-    """
-
-    def order_search(self, board, eval_func):
-        """
-        Determine the order of moves to be searched.
-
-        This function determines the search order by evaluating the current
-        score of each position. The move it checks first at each tree is the
-        move which provides the best immediate value.
-
-        Arguments
-        ---------
-        board: the current board state.
-        eval_func: the function which scores a given position.
-
-        Returns
-        -------
-        search_order: a list ordered by the search order.
-        """
-        unsorted_legal_moves = legal_moves_list(board)
-        legal_move_scores = [eval_func(move) for move ]
-        return legal_moves_list(board)
 
 class EvalEng:
     """
@@ -295,13 +297,15 @@ class EvalEng:
         """
         score_pos scores a position to see which player has the advantage.
 
-        It 
+        It
 
         """
         raise NotImplementedError("Subclasses must implement score_pos")
 
     def pawn_control_squares(self, board, color):
         """
+        Return list of controlled squares.
+
         Returns a list of squares that are controlled by pawns of the given
         color, even if there are no pieces to capture (i.e., includes diagonal
         influence).
@@ -311,7 +315,8 @@ class EvalEng:
             board: a python-chess Board object.
             color: chess.WHITE or chess.BLACK
 
-        Returns:
+        Returns
+        -------
         - A list of controlled square names (e.g., ["e4", "f5", "e4"])
         """
         controlled = []
