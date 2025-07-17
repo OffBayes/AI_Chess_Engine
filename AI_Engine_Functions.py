@@ -353,6 +353,8 @@ class HeuristicEval(EvalEng):
 
     def current_material(self, board):
         """
+        Calculate the current material score.
+
         This function calculates the current material score. It uses common
         scoring values — pawn: 1, knight: 3, bishop: 3.2, rook: 5, queen: 9.
 
@@ -380,6 +382,8 @@ class HeuristicEval(EvalEng):
 
     def current_space(self, board):
         """
+        Calculate the current space control.
+
         This function calculates the current space control. It scores space
         based on the number of opponent squares that can currently be moved to
         or a pawn could move to if a piece was there.
@@ -425,6 +429,8 @@ class HeuristicEval(EvalEng):
 
     def current_development(self, board):
         """
+        Calculate the current development.
+
         This function calculates the current piece development. It scores
         development based on whether the current square is the same as the
         starting square.
@@ -433,11 +439,13 @@ class HeuristicEval(EvalEng):
         ---------
         board: the current board space.
 
-        It returns:
-        An integer which shows how much more developed the current player is
-        compared to the opponent.
+        Returns
+        -------
+        development: the number of developed pieces
         """
-        hyp_board = board.copy()
+        starting_pos = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR'
+        current_pos = board.fen()
+        white_dev = sum([i for char in ])
 
     def current_pawnchain(self, board):
         """
