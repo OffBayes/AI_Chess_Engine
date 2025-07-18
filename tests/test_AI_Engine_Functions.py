@@ -29,28 +29,32 @@ italian = chess.Board(
     fen='r1bqkbnr/pppp1ppp/2n5/4p3/2B1P3/5N2/PPPP1PPP/RNBQK2R b')
 
 
-class TestLegalMovesList:
+class TestOrderer:
+    def setup_method(self):
+        self.orderer = AI.Orderer()
+
+    # Testing Legal Moves List
     def test_empty(self):
-        assert AI.legal_moves_list(empty_board) == []
+        assert self.orderer.legal_moves_list(empty_board) == []
 
     def test_stalemate(self):
-        assert AI.legal_moves_list(stalemate) == []
+        assert self.orderer.legal_moves_list(stalemate) == []
 
     def test_checkmate(self):
-        assert AI.legal_moves_list(checkmate) == []
+        assert self.orderer.legal_moves_list(checkmate) == []
 
     def test_endgame(self):
-        eng_moves = set(AI.legal_moves_list(end_game))
+        eng_moves = set(self.orderer.legal_moves_list(end_game))
         moves = set(["h1g1", "h2h3", "h2h4"])
         assert eng_moves ^ moves == set()
 
     def test_castling(self):
-        eng_moves = set(AI.legal_moves_list(castling))
+        eng_moves = set(self.orderer.legal_moves_list(castling))
         moves = set(["e1c1", "e1g1"])
         assert moves - eng_moves == set()
 
     def test_forced(self):
-        assert AI.legal_moves_list(forced) == ["g2g3"]
+        assert self.orderer.legal_moves_list(forced) == ["g2g3"]
 
 
 class TestHeuristicEval:
@@ -99,3 +103,25 @@ class TestHeuristicEval:
 
     def test_current_space_italian(self):
         assert self.eval.current_space(italian) == (9, 7)
+
+    # Testing Current Development
+    def test_current_development_empty(self):
+        assert self.eval.current_development(empty_board) == (0, 0)
+
+    def test_current_development_starting(self):
+        assert self.eval.current_development(starting_position) == (0, 0)
+
+    def test_current_development_stalemate(self):
+        assert self.eval.current_development(stalemate) == (2, 1)
+
+    def test_current_development_checkmate(self):
+        assert self.eval.current_development(checkmate) == (2, 2)
+
+    def test_current_development_end_game(self):
+        assert self.eval.current_development(end_game) == (1, 1)
+
+    def test_current_development_forced(self):
+        assert self.eval.current_development(forced) == (2, 2)
+
+    def test_current_development_italian(self):
+        assert self.eval.current_development(italian) == (3, 2)

@@ -13,9 +13,30 @@ import re
 import numpy as np
 
 white = True
+
+
+# Functions
+def fen_to_space(board):
+    """
+    Convert a FEN to have one character for each space on the board.
+
+    Arguments
+    ---------
+    board : the current board position.
+
+    Returns
+    -------
+    board_fen: a string of the current board position, where a char represents
+               each square.
+    """
+    board_fen = board.fen()
+    for i in range(1, 9):
+        board_fen = board_fen.replace(str(i), '-'*i)
+    return board_fen
+
 # Classes
 class Orderer:
-    def legal_moves_list(board):
+    def legal_moves_list(self, board):
         """
         Legal_moves_list takes the moves generator and returns a list of moves.
 
@@ -443,9 +464,27 @@ class HeuristicEval(EvalEng):
         -------
         development: the number of developed pieces
         """
-        starting_pos = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR'
-        current_pos = board.fen()
-        white_dev = sum([i for char in ])
+        start_pos = fen_to_space(chess.Board()).split(' ')[0]
+        start_pos = start_pos.split('/')
+        curr_pos = fen_to_space(board).split(' ')[0]
+        curr_pos = curr_pos.split('/')
+        white_start_rows = "".join(start_pos[6:8])
+        white_curr_rows = "".join(curr_pos[6:8])
+        black_start_rows = "".join(start_pos[0:2])
+        black_curr_rows = "".join(curr_pos[0:2])
+
+        white_moved = sum([1 for white_start_rows, white_curr_rows in
+                           zip(white_start_rows, white_curr_rows)
+                           if white_start_rows != white_curr_rows])
+        black_moved = sum([1 for black_start_rows, black_curr_rows in
+                           zip(black_start_rows, black_curr_rows)
+                           if black_start_rows != black_curr_rows])
+        white_taken = 16 - sum([1 for char in "".join(curr_pos)
+                                if char.isupper()])
+        black_taken = 16 - sum([1 for char in "".join(curr_pos)
+                                if char.islower()])
+        development = (white_moved - white_taken, black_moved - black_taken)
+        return development
 
     def current_pawnchain(self, board):
         """

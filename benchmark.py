@@ -29,17 +29,17 @@ def tictoc(func, arg1=None, arg2=None):
 
     """
     if (arg1 is None) & (arg2 is None):
-        t0 = time.time()
+        t0 = time.perf_counter()
         func()
-        t1 = time.time()
+        t1 = time.t()
     elif (arg2 is None):
-        t0 = time.time()
+        t0 = time.perf_counter()()
         func(arg1)
-        t1 = time.time()
+        t1 = time.perf_counter()()
     else:
-        t0 = time.time()
+        t0 = time.perf_counter()()
         func(arg1, arg2)
-        t1 = time.time()
+        t1 = time.perf_counter()()
 
     elapsed = t1 - t0
 
