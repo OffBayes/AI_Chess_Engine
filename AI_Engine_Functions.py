@@ -146,7 +146,8 @@ class ChessEngine:
 
     def find_best_move(self, board, depth):
         """Use the composed search engine to find the best move."""
-        return self.searchEng.search(board, self.evaluate, depth)
+        hyp_board = board.copy()
+        return self.searchEng.search(hyp_board, self.evaluate, depth)
 
 
 class SearchEng:
@@ -234,19 +235,18 @@ class SearchEng:
         -------
         best_move: A tuple with the best move and associated score.
         """
-        hyp_board = board.copy()
         white = True
         best_move = None
-        if depth == 0 or hyp_board.is_game_over():
-            return (None, eval_func(hyp_board))
+        if depth == 0 or board.is_game_over():
+            return (None, eval_func(board))
 
-        legal_moves = self.orderer.order_search(hyp_board)
+        legal_moves = self.orderer.order_search(board)
 
-        if hyp_board.turn is white:
+        if board.turn is white:
             for move in legal_moves:
-                hyp_board.push_uci(move)
-                _, value = self.search(hyp_board, eval_func, depth - 1)
-                hyp_board.pop()
+                board.push_uci(move)
+                _, value = self.search(board, eval_func, depth - 1)
+                board.pop()
                 if value > alpha:
                     alpha = value
                     best_move = move
@@ -258,9 +258,9 @@ class SearchEng:
 
         else:
             for move in legal_moves:
-                hyp_board.push_uci(move)
-                _, value = self.search(hyp_board, eval_func, depth - 1)
-                hyp_board.pop()
+                board.push_uci(move)
+                _, value = self.search(board, eval_func, depth - 1)
+                board.pop()
                 if value < beta:
                     beta = value
                     best_move = move
@@ -355,7 +355,6 @@ class EvalEng:
                     controlled.append(chess.square_name(target_square))
         return controlled
 
-
 class HeuristicEval(EvalEng):
     """
     HeuristicEval attempts to evaluate the position using chess heuristics.
@@ -416,21 +415,20 @@ class HeuristicEval(EvalEng):
         A tuple where the first position is the white space score and the
         second is the black space score.
         """
-        hyp_board = board.copy()
         score = []
         for color in ['white', 'black']:
             if color == 'white':
-                hyp_board.turn = True
+                board.turn = True
                 opponent_rows = ["5", "6", "7", "8"]
             else:
-                hyp_board.turn = False
+                board.turn = False
                 opponent_rows = ["1", "2", "3", "4"]
 
             # Generate pseudo-legal moves, excluding all pawn moves
             legal_moves = ''.join([
                 move.uci()
-                for move in hyp_board.generate_pseudo_legal_moves()
-                if hyp_board.piece_type_at(move.from_square) != chess.PAWN
+                for move in board.generate_pseudo_legal_moves()
+                if board.piece_type_at(move.from_square) != chess.PAWN
             ])
 
             result = ''
@@ -441,7 +439,7 @@ class HeuristicEval(EvalEng):
 
             # Adds the squares pawns can control
             pawn_controls = self.pawn_control_squares(
-                hyp_board, hyp_board.turn)
+                board, board.turn)
             result += ''.join(pawn_controls)
 
             score.append(sum(result.count(moves) for moves in opponent_rows))
@@ -486,39 +484,35 @@ class HeuristicEval(EvalEng):
         development = (white_moved - white_taken, black_moved - black_taken)
         return development
 
-    def current_pawnchain(self, board):
-        """
-        Current_pawnchain calculates the current number of pawn chains.
 
-        Arguments
-        ---------
-        board: the current board space.
+    """
+        def current_pawnisland(self, board):
+    ###
+            Current_pawnchain calculates the current number of pawn chains.
 
-        Returns
-        -------
-        chain_num: An integer representing the pawn chain number.
-        """
-        hyp_board = board.copy()
+            Arguments
+            ---------
+            board: the current board space.
 
-        # Checks the color of the current player
-        if hyp_board.turn == ChessEngine().white:
-            C = 'P'
-        else:
-            C = 'p'
+            Returns
+            -------
+            chain_num: An integer representing the pawn chain number.
+    ###
 
-        # Numerical notation of pawn squares
-        pawn_squares_num = ([square for square, piece
-                             in hyp_board.piece_map().items()
-                             if piece == chess.Piece.from_symbol(C)])
+            # Numerical notation of pawn squares
+            pawn_squares_num = ([square for square, piece
+                                 in board.piece_map().items()
+                                 if piece == chess.Piece.from_symbol(C)])
 
-        # String notation of pawn squares
-        pawn_loc = ''.join([chess.square_name(i) for i in pawn_squares_num])
-        # Remove all digits from string
-        pawn_loc = re.sub(r'\d+', '', pawn_loc)
-        # Sorts the columns alphabetically
-        pawn_loc = ''.join(sorted(pawn_loc))
+            # String notation of pawn squares
+            pawn_loc = ''.join([chess.square_name(i) for i in pawn_squares_num])
+            # Remove all digits from string
+            pawn_loc = re.sub(r'\d+', '', pawn_loc)
+            # Sorts the columns alphabetically
+            pawn_loc = ''.join(sorted(pawn_loc))
+    """
 
-    def score_pos(self, board, weights=[1, 0.2]):
+    def score_pos(self, board, weights=[1, 0.2, 0.2]):
         """
         Scores a position.
 
@@ -536,11 +530,13 @@ class HeuristicEval(EvalEng):
         """
         white_mat, black_mat = self.current_material(board)
         white_spac, black_spac = self.current_space(board)
+        white_dev, black_dev = self.current_development(board)
         if board.is_checkmate():
             score = -np.inf if board.turn else np.inf
         else:
             score = (weights[0] * (white_mat - black_mat)
-                     + weights[1] * (white_spac - black_spac))
+                     + weights[1] * (white_spac - black_spac)
+                     + weights[2] * (white_dev - black_dev))
         return score
 
 
