@@ -29,32 +29,69 @@ italian = chess.Board(
     fen='r1bqkbnr/pppp1ppp/2n5/4p3/2B1P3/5N2/PPPP1PPP/RNBQK2R b')
 
 
+class TestFenToSpace:
+    def setup_method(self):
+        self.object = AI
+
+    def test_fen_to_space_empty(self):
+        board = '--------/' * 8
+        board = board[:-1]
+        assert board in self.object.fen_to_space(empty_board)
+
+    def test_fen_to_space_stalemate(self):
+        board = '---k----/---P----/---K----' + 5*'/--------'
+        assert board in self.object.fen_to_space(stalemate)
+
+    def test_fen_to_space_checkmate(self):
+        board = 'rnb-kbnr/ppppp-pp/-----p--/--------/-----PPq/--------'
+        board = board + '/PPPPP--P/RNBQKBNR'
+        assert board in self.object.fen_to_space(checkmate)
+
+    def test_fen_to_space_queens(self):
+        board = 'qqqqqqqq/rrrrrrrr/' + 4*'--------/' + 'RRRRRRRR/QQQQQQQQ'
+        assert board in self.object.fen_to_space(queens)
+
+
 class TestOrderer:
     def setup_method(self):
         self.orderer = AI.Orderer()
 
     # Testing Legal Moves List
-    def test_empty(self):
+    def test_legal_moves_list_empty(self):
         assert self.orderer.legal_moves_list(empty_board) == []
 
-    def test_stalemate(self):
+    def test_legal_moves_list_stalemate(self):
         assert self.orderer.legal_moves_list(stalemate) == []
 
-    def test_checkmate(self):
+    def test_legal_moves_list_checkmate(self):
         assert self.orderer.legal_moves_list(checkmate) == []
 
-    def test_endgame(self):
+    def test_legal_moves_list_endgame(self):
         eng_moves = set(self.orderer.legal_moves_list(end_game))
         moves = set(["h1g1", "h2h3", "h2h4"])
         assert eng_moves ^ moves == set()
 
-    def test_castling(self):
+    def test_legal_moves_list_castling(self):
         eng_moves = set(self.orderer.legal_moves_list(castling))
         moves = set(["e1c1", "e1g1"])
         assert moves - eng_moves == set()
 
-    def test_forced(self):
+    def test_legal_moves_list_italian(self):
+        eng_moves = set(self.orderer.legal_moves_list(italian))
+        moves = set(["a7a6", "a7a5", "b7b6", "b7b5", "d7d6", "d7d5", "f7f6",
+                     "f7f5", "g7g6", "g7g5", "h7h6", "h7h5", "c6b8", "c6a5",
+                     "c6b4", "c6d4", "c6e7", "a8b8", "d8e7", "d8f6", "d8g5",
+                     "d8h4", "e8e7", "f8e7", "f8d6", "f8c5", "f8b4", "f8a3",
+                     "g8e7", "g8f6", "g8h6"])
+        assert eng_moves == moves
+
+    def test_legal_moves_list_forced(self):
         assert self.orderer.legal_moves_list(forced) == ["g2g3"]
+
+    # Testing Order Search
+    def test_order_search(self):
+        assert (self.orderer.legal_moves_list(italian)
+                == self.orderer.order_search(italian))
 
 
 class TestHeuristicEval:
