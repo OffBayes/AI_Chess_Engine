@@ -6,7 +6,7 @@ Created on Sun Jul 27 19:00:28 2025
 """
 
 # Imports
-from Pruner import Pruner
+from .Pruner import Pruner
 
 
 class ChessEngine:

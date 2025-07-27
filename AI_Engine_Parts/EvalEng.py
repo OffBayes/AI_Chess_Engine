@@ -9,7 +9,7 @@ Created on Sun Jul 27 16:40:56 2025
 import chess
 import re
 import numpy as np
-from AI_Engine_Function import fen_to_space
+from .AI_Engine_Functions import fen_to_space
 
 
 class EvalEng:

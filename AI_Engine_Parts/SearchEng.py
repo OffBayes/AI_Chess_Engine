@@ -7,7 +7,7 @@ Created on Sun Jul 27 16:42:38 2025
 
 # Imports
 import numpy as np
-from Orderer import Orderer
+from .Orderer import Orderer
 
 
 class SearchEng:
