@@ -5,6 +5,11 @@ Created on Sun Jul 27 16:42:38 2025
 @author: Prior_Bayes
 """
 
+# Imports
+import numpy as np
+from Orderer import Orderer
+
+
 class SearchEng:
     """
     A customizable search engine that allows different search approaches.

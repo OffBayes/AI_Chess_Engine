@@ -5,6 +5,13 @@ Created on Sun Jul 27 16:40:56 2025
 @author: Prior_Bayes
 """
 
+# Imports
+import chess
+import re
+import numpy as np
+from AI_Engine_Function import fen_to_space
+
+
 class EvalEng:
     """
     EvalEng represents the chess engine evaluation capability.
@@ -203,7 +210,7 @@ class HeuristicEval(EvalEng):
         # Numerical notation of pawn squares
         pawn_squares_num = ([square for square, piece
                              in board.piece_map().items()
-                             if piece == chess.Piece.from_symbol(C)])
+                             if piece == chess.Piece.from_symbol('P')])
 
         # String notation of pawn squares
         pawn_loc = ''.join([chess.square_name(i) for i in pawn_squares_num])
