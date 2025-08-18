@@ -7,7 +7,7 @@ Created on Fri May 30 23:58:45 2025
 
 import pytest
 import chess
-import AI_Engine_Functions as AI
+import AI_Engine_Parts as AI
 
 # Useful Postions
 starting_position = chess.Board()
@@ -27,6 +27,8 @@ queens = chess.Board(
     fen='qqqqqqqq/rrrrrrrr/8/8/8/8/RRRRRRRR/QQQQQQQQ')
 italian = chess.Board(
     fen='r1bqkbnr/pppp1ppp/2n5/4p3/2B1P3/5N2/PPPP1PPP/RNBQK2R b')
+fried_liver = chess.Board(
+    fen='r1bqkb1r/ppp2Npp/2n5/3np3/2B5/8/PPPP1PPP/RNBQK2R b')
 
 
 class TestFenToSpace:
@@ -93,6 +95,25 @@ class TestOrderer:
         assert (self.orderer.legal_moves_list(italian)
                 == self.orderer.order_search(italian))
 
+
+class TestAttackOrder:
+    def setup_method(self):
+        self.orderer = AI.AttackOrder()
+
+    def test_get_attackers_empty(self):
+        assert self.get_attackers(empty_board) == []
+
+    def test_get_attackers_stalemate(self):
+        assert self.get_attackers(stalemate) == []
+
+    def test_get_attackers_checkmate(self):
+        assert self.get_attackers(checkmate) == []
+
+    def test_get_attackers_italian(self):
+        assert self.get_attackers(italian) == []
+
+    def test_get_attackers_fried_liver(self):
+        assert self.get_attackers(fried_liver) == 
 
 class TestHeuristicEval:
     def setup_method(self):
