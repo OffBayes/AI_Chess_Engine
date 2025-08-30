@@ -104,7 +104,7 @@ class SearchEng:
 
         if board.turn is white:
             for move in legal_moves:
-                board.push_uci(move)
+                board.push(move)
                 _, value = self.search(board, eval_func, depth - 1)
                 board.pop()
                 if value > alpha:
@@ -118,7 +118,7 @@ class SearchEng:
 
         else:
             for move in legal_moves:
-                board.push_uci(move)
+                board.push(move)
                 _, value = self.search(board, eval_func, depth - 1)
                 board.pop()
                 if value < beta:
